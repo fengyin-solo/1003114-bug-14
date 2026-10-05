@@ -27,6 +27,18 @@ class Store:
                 return row
         return None
 
+    def _is_abnormal(self, module: str, row: dict[str, Any]) -> bool:
+        """异常标记读数：各模块在自己的服务里维护判定口径，这里不另算一套。
+
+        皮带运输以动作流水的第一次真实判定为准，概览、列表、详情共用同一函数，
+        避免行内被旧逻辑写坏的 abnormal 字段再造成第二套口径。
+        """
+        if module == "belt":
+            from app.services.belt import is_abnormal
+
+            return is_abnormal(row)
+        return bool(row.get("abnormal"))
+
     def overview(self) -> dict[str, object]:
         modules: list[dict[str, object]] = []
         for name in self.module_names():
@@ -35,7 +47,7 @@ class Store:
                 "name": name,
                 "created": len(rows),
                 "pending": sum(1 for row in rows if row.get("pending")),
-                "abnormal": sum(1 for row in rows if row.get("abnormal")),
+                "abnormal": sum(1 for row in rows if self._is_abnormal(name, row)),
             })
         cards = [
             {"label": "业务模块", "value": len(modules)},

@@ -9,10 +9,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
+from app.migrations.belt_history import backfill_belt_abnormal_flags
 from app.routers import ROUTERS
 from app.store import store
 
 app = FastAPI(title="矿山安全监测管理平台", version="1.0.0")
+
+# 启动前先把历史皮带被旧逻辑覆盖的异常标记按当时判定补正；补不了的转入巷道巡检待办。
+backfill_belt_abnormal_flags()
 
 app.add_middleware(
     CORSMiddleware,
